@@ -14,6 +14,7 @@ import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.Menu
+import android.view.View
 import com.cdc.a1stopclick.adapters.ProductAdapter
 import com.cdc.a1stopclick.api.GuestProductRetriever
 import com.cdc.a1stopclick.models.Data
@@ -22,13 +23,13 @@ import com.cdc.a1stopclick.models.Product
 import com.cdc.a1stopclick.models.ProductRepositoryImpl
 import com.cdc.a1stopclick.presenter.HomePresenter
 import kotlinx.android.synthetic.main.content_home.*
+import kotlinx.android.synthetic.main.view_loading.*
 import retrofit2.Call
 import retrofit2.Response
 import javax.security.auth.callback.Callback
 import kotlin.collections.ArrayList
 
-class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-
+class HomeActivity : ChildActivity(), NavigationView.OnNavigationItemSelectedListener, HomePresenter.View {
     private val productRetriever = GuestProductRetriever()
     private val presenter: HomePresenter by lazy { HomePresenter(ProductRepositoryImpl.getRepository(this)) }
 
@@ -49,22 +50,10 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         navView.setNavigationItemSelectedListener(this)
 
         //start
-        presenter.search()
-
-        //end
-
-        val dataList = ArrayList<Data>()
-        dataList.add(Data("NJACKONJ", "test", Preview("", false), 1234556, "",false, "https://goosc.herokuapp.com/static/images/2Fast2Furious.jpg" ))
-        dataList.add(Data("PNTCWEIE", "drama kroya", Preview("", false), 250, "",false, "https://goosc.herokuapp.com/static/images/JohnWick.jpg" ))
-        dataList.add(Data("SHTLJGGI", "Silent Comedy", Preview("", false), 10000000, "",false, "https://goosc.herokuapp.com/static/images/QYOCDXBX.jpg" ))
-        dataList.add(Data("IUGXVXFB", "Naruto the movie", Preview("", false), 10000000, "",false, "https://images-na.ssl-images-amazon.com/images/I/71rNJQ2g-EL._SY606_.jpg" ))
-
-        val gridLayoutManager = GridLayoutManager(this, 2)
-        recyclerView.layoutManager = gridLayoutManager
-        //recyclerView.adapter = ProductAdapter(dataList)
-
         if (isNetworkConnected()) {
-            productRetriever.getProductList(callback, 0,GuestProductRetriever.size)
+            presenter.attachView(this)
+            presenter.search()
+            Log.e("test", "apalah lagu lagu lama")
         } else {
             AlertDialog.Builder(this).setTitle("No Internet Connection")
                 .setMessage("Please check your internet connection and try again")
@@ -74,26 +63,11 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun isNetworkConnected(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager // 1
-        val networkInfo = connectivityManager.activeNetworkInfo //2
-        return networkInfo != null && networkInfo.isConnected //3
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.isConnected
     }
 
-    private val callback = object : retrofit2.Callback<Product> {
-        override fun onFailure(call: Call<Product>?, t: Throwable?) {
-            Log.e("MainActivity", "Problem calling Github API", t)
-        }
-
-        override fun onResponse(call: Call<Product>?, response: Response<Product>?) {
-            response?.isSuccessful.let {
-                val resultList = Product(response?.body()?.data, response?.body()?.code,
-                    response?.body()?.length, response?.body()?.message
-                )
-                Log.e("MainActivity", resultList.toString())
-                recyclerView.adapter = ProductAdapter(resultList.data as ArrayList<Data>)
-            }
-        }
-    }
 
     override fun onBackPressed() {
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
@@ -133,5 +107,26 @@ class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         drawerLayout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    override fun showLoading() {
+        loadingContainer.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
+    }
+
+    override fun showProducts(products: ArrayList<Data>) {
+        loadingContainer.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+        val gridLayoutManager = GridLayoutManager(this, 2)
+        recyclerView.layoutManager = gridLayoutManager
+        recyclerView.adapter = ProductAdapter(products)
+    }
+
+    override fun showEmptyProducts() {
+
+    }
+
+    override fun showError() {
+
     }
 }

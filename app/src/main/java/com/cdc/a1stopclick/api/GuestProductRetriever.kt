@@ -2,6 +2,7 @@ package com.cdc.a1stopclick.api
 
 import com.cdc.a1stopclick.models.Data
 import com.cdc.a1stopclick.models.Product
+import com.cdc.a1stopclick.models.RepositoryCallback
 import retrofit2.Callback
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -20,11 +21,5 @@ class GuestProductRetriever {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         service = retrofit.create(OneStopClickServices::class.java)
-    }
-
-    fun getProductList(callback: Callback<Product>, page: Int, size: Int){
-        val call = service.retrieveGuestProductList(page, size)
-        call.enqueue(callback)
-
     }
 }

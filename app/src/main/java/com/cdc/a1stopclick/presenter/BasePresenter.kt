@@ -1,7 +1,5 @@
 package com.cdc.a1stopclick.presenter
 
-import android.view.View
-
 abstract class BasePresenter<V> {
     protected var view: V? = null
 

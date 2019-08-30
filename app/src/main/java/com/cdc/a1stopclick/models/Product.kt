@@ -1,7 +1,7 @@
 package com.cdc.a1stopclick.models
 
 data class Product(
-    val data: List<Data>?,
+    val data: ArrayList<Data>?,
     val code: Int?,
     val length: Int?,
     val message: String?
