@@ -1,22 +1,16 @@
 package com.cdc.a1stopclick.adapters
 
-import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.cdc.a1stopclick.R
 import com.cdc.a1stopclick.api.GuestProductRetriever
 import com.cdc.a1stopclick.models.Data
-import com.cdc.a1stopclick.models.Product
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.main.activity_home.view.*
-import kotlinx.android.synthetic.main.product_list_item.view.*
 import java.text.NumberFormat
-import java.util.*
 import kotlin.collections.ArrayList
 
 class ProductAdapter(val productList: ArrayList<Data>) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {

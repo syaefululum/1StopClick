@@ -13,10 +13,17 @@ import retrofit2.http.Query
 
 interface OneStopClickServices {
 
-    @GET("/guest/product")
-    fun retrieveGuestProductList(
-        @Query("page") page: Int,
-        @Query("size") size: Int
+//    @GET("/guest/product")
+//    fun retrieveGuestProductList(
+//        @Query("page") page: Int?,
+//        @Query("size") size: Int?
+//    ): Call<Product>
+
+    @GET("/guest/product/search")
+    fun searchGuestProductList(
+        @Query("q") q: String?,
+        @Query("page") page: Int?,
+        @Query("size") size: Int?
     ): Call<Product>
 
     companion object Factory {

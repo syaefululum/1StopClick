@@ -1,20 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+<android.support.v4.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/swipeToRefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:showIn="@layout/app_bar_home"
-        android:orientation="vertical"
-        tools:context=".HomeActivity">
-    <android.support.v7.widget.RecyclerView
-            android:id="@+id/recyclerView"
+        tools:context=".HomeActivity"
+        tools:showIn="@layout/app_bar_home">
+
+    <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-    </android.support.v7.widget.RecyclerView>
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-    <include layout="@layout/view_loading"/>
+        <android.support.v7.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-</LinearLayout>
+
+        <include layout="@layout/view_loading" />
+
+        <include layout="@layout/view_noresults" />
+
+        <include layout="@layout/view_error" />
+
+    </LinearLayout>
+</android.support.v4.widget.SwipeRefreshLayout>

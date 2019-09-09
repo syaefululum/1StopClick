@@ -1,71 +1,112 @@
 package com.cdc.a1stopclick
 
+import android.app.SearchManager
 import android.content.Context
-import android.net.ConnectivityManager
+import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
 import android.support.v4.widget.DrawerLayout
 import android.support.design.widget.NavigationView
-import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.SearchView
 import android.support.v7.widget.Toolbar
-import android.util.Log
 import android.view.Menu
 import android.view.View
 import com.cdc.a1stopclick.adapters.ProductAdapter
-import com.cdc.a1stopclick.api.GuestProductRetriever
 import com.cdc.a1stopclick.models.Data
-import com.cdc.a1stopclick.models.Preview
-import com.cdc.a1stopclick.models.Product
+import com.cdc.a1stopclick.models.ProductRepository
 import com.cdc.a1stopclick.models.ProductRepositoryImpl
 import com.cdc.a1stopclick.presenter.HomePresenter
 import kotlinx.android.synthetic.main.content_home.*
+import kotlinx.android.synthetic.main.view_error.*
 import kotlinx.android.synthetic.main.view_loading.*
-import retrofit2.Call
-import retrofit2.Response
-import javax.security.auth.callback.Callback
+import kotlinx.android.synthetic.main.view_noresults.*
 import kotlin.collections.ArrayList
 
-class HomeActivity : ChildActivity(), NavigationView.OnNavigationItemSelectedListener, HomePresenter.View {
-    private val productRetriever = GuestProductRetriever()
+class HomeActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
+    HomePresenter.View {
     private val presenter: HomePresenter by lazy { HomePresenter(ProductRepositoryImpl.getRepository(this)) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+
+        //navigation init
+        initToolbarNavigation()
+
+        //set home view
+        presenter.attachView(this)
+
+        //load product list
+        presenter.searchWithKeyword()
+
+        //retry load product list
+        retry.setOnClickListener { presenter.searchWithKeyword() }
+        swipeToRefresh.setOnRefreshListener {
+            presenter.pullRefresh()
+            presenter.searchWithKeyword()
+            swipeToRefresh.isRefreshing = false
+
+        }
+    }
+
+    override fun showLoading() {
+        loadingContainer.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
+        errorContainer.visibility = View.GONE
+        noresultsContainer.visibility = View.GONE
+    }
+
+    override fun showProducts(products: ArrayList<Data>) {
+        loadingContainer.visibility = View.GONE
+        errorContainer.visibility = View.GONE
+        noresultsContainer.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+
+        setupProductList(products)
+    }
+
+    fun setupProductList(products: ArrayList<Data>) {
+        val gridLayoutManager = GridLayoutManager(this, 2)
+        recyclerView.layoutManager = gridLayoutManager
+        recyclerView.adapter = ProductAdapter(products)
+    }
+
+    override fun showEmptyProducts() {
+        noresultsContainer.visibility = View.VISIBLE
+        loadingContainer.visibility = View.GONE
+        recyclerView.visibility = View.GONE
+        errorContainer.visibility = View.GONE
+    }
+
+    override fun showError() {
+        loadingContainer.visibility = View.GONE
+        recyclerView.visibility = View.GONE
+        errorContainer.visibility = View.VISIBLE
+        noresultsContainer.visibility = View.GONE
+    }
+
+    fun initToolbarNavigation() {
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
         val toggle = ActionBarDrawerToggle(
-            this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
         )
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
         navView.setNavigationItemSelectedListener(this)
-
-        //start
-        if (isNetworkConnected()) {
-            presenter.attachView(this)
-            presenter.search()
-            Log.e("test", "apalah lagu lagu lama")
-        } else {
-            AlertDialog.Builder(this).setTitle("No Internet Connection")
-                .setMessage("Please check your internet connection and try again")
-                .setPositiveButton(android.R.string.ok) { _, _ -> }
-                .setIcon(android.R.drawable.ic_dialog_alert).show()
-        }
-    }
-
-    private fun isNetworkConnected(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connectivityManager.activeNetworkInfo
-        return networkInfo != null && networkInfo.isConnected
     }
 
 
@@ -81,7 +122,12 @@ class HomeActivity : ChildActivity(), NavigationView.OnNavigationItemSelectedLis
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.home, menu)
-        return true
+
+        val searchItem: MenuItem = menu.findItem(R.id.action_settings)
+        val searchView: SearchView = searchItem.actionView as SearchView
+        getProductList(searchView, searchItem)
+
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -109,24 +155,37 @@ class HomeActivity : ChildActivity(), NavigationView.OnNavigationItemSelectedLis
         return true
     }
 
-    override fun showLoading() {
-        loadingContainer.visibility = View.VISIBLE
-        recyclerView.visibility = View.GONE
-    }
+    private fun getProductList(searchView: SearchView, searchItem: MenuItem) {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(p0: String?): Boolean {
+                return false
+            }
 
-    override fun showProducts(products: ArrayList<Data>) {
-        loadingContainer.visibility = View.GONE
-        recyclerView.visibility = View.VISIBLE
-        val gridLayoutManager = GridLayoutManager(this, 2)
-        recyclerView.layoutManager = gridLayoutManager
-        recyclerView.adapter = ProductAdapter(products)
-    }
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if (query.isNullOrEmpty()) {
+                    return false
+                }
+                val query = query.toString()
+                presenter.setKeyword(query)
+                presenter.resetPage()
+                presenter.resetProducts()
+                presenter.searchWithKeyword()
+                return true
+            }
+        })
 
-    override fun showEmptyProducts() {
+        searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener{
+            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                return true
+            }
 
-    }
-
-    override fun showError() {
-
+            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                presenter.resetPage()
+                presenter.resetKeyword()
+                presenter.resetProducts()
+                presenter.searchWithKeyword()
+                return true
+            }
+        })
     }
 }

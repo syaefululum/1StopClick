@@ -1,32 +1,52 @@
 package com.cdc.a1stopclick.presenter
 
-import com.cdc.a1stopclick.models.Data
-import com.cdc.a1stopclick.models.Product
-import com.cdc.a1stopclick.models.ProductRepository
-import com.cdc.a1stopclick.models.RepositoryCallback
+import com.cdc.a1stopclick.models.*
+import com.cdc.a1stopclick.models.ActivityRepository.*
 
-class HomePresenter(private val repository: ProductRepository): BasePresenter<HomePresenter.View>() {
+class HomePresenter(private val repository: ProductRepository) :
+    BasePresenter<HomePresenter.View>() {
     private var products: ArrayList<Data>? = null
+    private var model: Model = ActivityModel()
 
-    fun search(){
+    fun pullRefresh(){
+        model.incrementPage()
+    }
+
+    fun resetPage(){
+        model.resetCurrentPage()
+    }
+
+    fun setKeyword(key: String){
+        model.setSearchKeyword(key)
+    }
+
+    fun resetKeyword(){
+        model.resetSearchKeyword()
+    }
+
+    fun resetProducts(){
+        model.resetProducts()
+    }
+
+    fun searchWithKeyword() {
         view?.showLoading()
-
-        repository.getProducts(object : RepositoryCallback<Product>{
+        repository.searchProducts(object : RepositoryCallback<Product> {
             override fun onError() {
-                view?.showError()
+                view?.showLoading()
             }
 
-            override fun onSuccess(t: ArrayList<Data>?) {
-                this@HomePresenter.products = t
-                if (products != null){
-                    view?.showProducts(products!!)
+            override fun onSuccess(products: ArrayList<Data>?) {
+                this@HomePresenter.products = products
+                model.incrementProduct(products)
+                if (model.getCurrentProducts() != null && model.getCurrentProducts().isNotEmpty()) {
+                    view?.showProducts(model.getCurrentProducts())
                 } else {
                     view?.showEmptyProducts()
                 }
-
             }
-        }, page = 0, size = 10)
+        }, model.getSearchKeyword(), model.getCurrentPage(), model.getSize())
     }
+
 
     interface View {
         fun showLoading()
